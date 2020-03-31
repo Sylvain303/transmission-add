@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 #
-# add a local torrent file to a remote transmission daemon
+# Add a local torrent file to a remote transmission daemon.
+# Use notify-send to make information popup on graphical interface.
 #
 # Usage: transmission-add TORRENT_FILE
 #
 # Arguments:
 #   TORRENT_FILE   the local file pointing to a .torrent
-#
-# WARNING:
-#   TORRENT_FILE starting with /tmp pathname will be automaticly removed
 
 TRANSMISSION_ADDR=192.168.1.2
 TRANSMISSION_PORT=9091
@@ -102,25 +100,6 @@ notify()
   notify-send 'Transmission add' "$msg" --icon=$icon
 }
 
-remove_if_tempfile()
-{
-  local filename="$1"
-  if [[ ! -e "$filename" ]] ; then
-    return 1
-  fi
-
-  # get first path part
-  local lpath=$(echo "${filename#/}" | awk -F / '{ print "/"$1 }')
-  # remove temp file
-  if [[ $lpath == "/tmp" ]]
-  then
-    log "remove temp file: $filename"
-    rm -f "$filename"
-  else
-    log "kept file: ($lpath) $filename"
-  fi
-}
-
 main()
 {
   # override glogals
@@ -132,7 +111,6 @@ main()
   local ret=$?
   if [[ $ret -eq 0 ]] ; then
       notify $ret "torrent added '$TORRENT_FILE'"
-      remove_if_tempfile "$TORRENT_FILE"
   else
       notify $ret "fail to add torrent '$TORRENT_FILE'\n$msg"
   fi
