@@ -9,9 +9,9 @@ has performed well.
 ## Install
 
 ```
-git clone https://github.com:Sylvain303/transmission-add.git
+git clone https://github.com/Sylvain303/transmission-add.git
 # if needed:
-sudo apt-get install libnotify-bin
+sudo apt-get install libnotify-bin transmission-cli
 ```
 
 ## Configuration
@@ -63,14 +63,13 @@ Next, in FireFox:
 
 1. Save the torrent file (and check the box to remember the decision for this type of content).
 2. Modify in **preferences** > **Applications** look for "BitTorrent seed file".
-3. Change the **Action** to "Use Other": browse to find the script `transmission-add`.
+3. Change the **Action** to **Use other** and browse to find the script `transmission-add`.
 
 ![Screenshot_FireFox_preferences.png](Screenshot_FireFox_preferences.png)
 
-
 Now?
 
-One click, save and dowload to your local seedbox, and share all those linux images you love, and more!
+One click, save and download to your local seedbox, and share all those Linux images you love, and more!
 
 Try again on a .torrent link in your browser, it should automaticliy download the .torrent and pass it to
 `transmission-add` and a popup should raise informing that the torrent has been added.
