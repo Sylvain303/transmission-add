@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+#
+# add a local torrent file to a remote transmission daemon
+#
+# Usage: transmission-add TORRENT_FILE
+#
+# Arguments:
+#   TORRENT_FILE   the local file pointing to a .torrent
+#
+# WARNING:
+#   TORRENT_FILE starting with /tmp pathname will be automaticly removed
+
+TRANSMISSION_ADDR=192.168.1.2
+TRANSMISSION_PORT=9091
+# transmission-remote credential are read from ~/.netrc
+TMPDIR=$HOME/tmp
+LOGFILE=$TMPDIR/transmission_add.log
+
+###################################################################### init
+
+SCRIPTDIR=$(dirname $(readlink -f "$0"))
+CONFFILE="$SCRIPTDIR/transmission.conf"
+
+###################################################################### functions
+
+loadconf()
+{
+    local conffile="$1"
+    if [[ -e "$conffile" ]]
+    then
+        source "$conffile"
+        return 0
+    fi
+    return 1
+}
+
+# split dirname and basename
+# nautilus: %d %b
+# thunar: transmission-add %d %n
+
+mktmpdir()
+{
+    local tmpdir="$1"
+    # user tmpdir
+    if [[ ! -d "$tmpdir" ]]
+    then
+        mkdir "$tmpdir"
+    fi
+}
+
+readarg()
+{
+    TORRENT_FILE="$1"
+
+    if [[ -f "$TORRENT_FILE" ]]
+    then
+      return 0
+    else
+      log "file not found: '$TORRENT_FILE'"
+      return 1
+    fi
+}
+
+log()
+{
+  if [[ -n $LOGFILE ]]
+  then
+    echo "$(date "+%Y-%m-%d_%H:%M:%S"): $*" >> $LOGFILE
+  fi
+}
+
+transmission_add()
+{
+  local torrent=$1
+  local msg
+  if [[ -e $torrent ]] ; then
+    msg=$(transmission-remote $TRANSMISSION_ADDR:$TRANSMISSION_PORT --add "$torrent" 2>&1)
+    local ret=$?
+    log "added: ($ret) $torrent : '$msg'"
+  else
+    msg="file not found: ($PWD) '$torrent'"
+    ret=1
+  fi
+
+  echo "$msg"
+  return $ret
+}
+
+notify()
+{
+  # 0 success, >0 failure
+  local status=$1
+  local msg="$2"
+  local icon
+  if [[ $status -eq 0 ]]
+  then
+      icon=dialog-information
+  else
+      icon=dialog-error
+  fi
+
+  notify-send 'Transmission add' "$msg" --icon=$icon
+}
+
+remove_if_tempfile()
+{
+  local filename="$1"
+  if [[ ! -e "$filename" ]] ; then
+    return 1
+  fi
+
+  # get first path part
+  local lpath=$(echo "${filename#/}" | awk -F / '{ print "/"$1 }')
+  # remove temp file
+  if [[ $lpath == "/tmp" ]]
+  then
+    log "remove temp file: $filename"
+    rm -f "$filename"
+  else
+    log "kept file: ($lpath) $filename"
+  fi
+}
+
+main()
+{
+  # override glogals
+  loadconf "$CONFFILE"
+  readarg "$@"
+  mktmpdir $TMPDIR
+  local msg
+  msg=$(transmission_add "$TORRENT_FILE")
+  local ret=$?
+  if [[ $ret -eq 0 ]] ; then
+      notify $ret "torrent added '$TORRENT_FILE'"
+      remove_if_tempfile "$TORRENT_FILE"
+  else
+      notify $ret "fail to add torrent '$TORRENT_FILE'\n$msg"
+  fi
+}
+
+[[ $0 != "$BASH_SOURCE" ]] && sourced=1 || sourced=0
+if  [[ $sourced -eq 0 ]]
+then
+    # pass positional argument as is
+    main "$@"
+fi
